@@ -7,6 +7,11 @@ include_directories(include)
 
 #add_executable(mytest mytest.cpp)
 
+add_subdirectory(SeanParent)
+add_subdirectory(SeanParent_edited)
+
+add_subdirectory(recursion_problem)
+
 add_subdirectory(std_forward)
 
 add_subdirectory(reference_wrapper_test)

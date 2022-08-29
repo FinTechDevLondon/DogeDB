@@ -14,44 +14,29 @@
 class TypeErasedV1
 {
     
-    friend std::ostream& operator<<(std::ostream& os, const TypeErasedV1& typeErased);
+    friend std::ostream& operator<<(std::ostream&, const TypeErasedV1&);
 
     struct Concept;
-    struct IntModel;
-    struct StringModel;
 
-    friend std::ostream& operator<<(std::ostream& os, const Concept& concept);
-    friend std::ostream& operator<<(std::ostream& os, const IntModel& intModel);
-    friend std::ostream& operator<<(std::ostream& os, const StringModel& intModel);
+    template<typename T>
+    struct Model;
+
+    friend std::ostream& operator<<(std::ostream&, const Concept&);
+
+    template<typename T>
+    friend std::ostream& operator<<(std::ostream&, const Model<T>&);
 
 public:
 
-/*
-    TypeErasedV1(const int value)
-        : p_data{std::make_unique<IntModel>(value)}
-    {
-        std::cout << "TypeErasedV1(int)" << std::endl;
-    }
-*/
-
-    TypeErasedV1(int value)
+    template<typename T>
+    TypeErasedV1(T value)
         #if USE_UNIQUE_PTR
-        : p_data{std::make_unique<IntModel>(std::move(value))}
+        : p_data{std::make_unique<Model<T>>(std::move(value))}
         #else
-        : p_data{new IntModel(std::move(value))}
+        : p_data{new Model<T>(std::move(value))}
         #endif
     {
-        std::cout << "TypeErasedV1(int)" << std::endl;
-    }
-
-    TypeErasedV1(std::string value)
-        #if USE_UNIQUE_PTR
-        : p_data{std::make_unique<StringModel>(std::move(value))}
-        #else
-        : p_data{new StringModel(std::move(value))}
-        #endif
-    {
-
+        std::cout << "TypeErasedV1(T)" << std::endl;
     }
 
     TypeErasedV1(const TypeErasedV1 &other)
@@ -65,28 +50,6 @@ public:
         std::cout << "TypeErasedV1(const TypeErasedV1&)" << std::endl;
     }
 
-/*
-    TypeErasedV1(const TypeErasedV1 &other)
-        #if USE_UNIQUE_PTR
-        : p_data{std::make_unique<IntModel>(other.p_data->copy())}
-        #else
-        : p_data(other.p_data->copy())
-        #endif
-    {
-        std::cout << "TypeErasedV1(const TypeErasedV1&)" << std::endl;
-    }
-
-    TypeErasedV1(const TypeErasedV1 &other)
-        #if USE_UNIQUE_PTR
-        : p_data{std::make_unique<StringModel>(other.p_data->copy())}
-        #else
-        : p_data(other.p_data->copy())
-        #endif
-    {
-        std::cout << "TypeErasedV1(const TypeErasedV1&)" << std::endl;
-    }
-*/
-
     TypeErasedV1(TypeErasedV1&& other) noexcept
         : p_data{std::move(other.p_data)}
     {
@@ -96,8 +59,6 @@ public:
     TypeErasedV1& operator=(const TypeErasedV1& other)
     {
         std::cout << "TypeErasedV1::operator=(const TypeErasedV1&)" << std::endl;
-
-        //assert(typeid(p_data) == typeid(other.p_data));
 
         TypeErasedV1 tmp(other);
         *this = std::move(tmp);
@@ -109,8 +70,6 @@ public:
     TypeErasedV1& operator=(TypeErasedV1&& other) noexcept
     {
         std::cout << "TypeErasedV1::operator=(TypeErasedV1&&)" << std::endl;
-
-        //assert(dynamic_cast<decltype(p_data.get())>(other.p_data.get()));
 
         p_data = std::move(other.p_data);
         return *this;
@@ -144,25 +103,19 @@ private:
         Concept* copy() const = 0;
         #endif
 
-        // virtual method for draw was here - need something for operator<< ?
         #if ENABLE_STREAM_INJECT
         virtual
         void stream_inject(std::ostream& os) const = 0;
         #endif
     };
 
-    struct IntModel : public Concept
+    template<typename T>
+    struct Model : public Concept
     {
-        friend std::ostream& operator<<(std::ostream& os, const IntModel& intModel);
-/*
-        IntModel(const int value)
-            : data{value}
-        {
+        template<typename U>
+        friend std::ostream& operator<<(std::ostream&, const Model<U>&);
 
-        }
-*/
-
-        IntModel(const int value)
+        Model(T value)
             : data(std::move(value))
         {
 
@@ -171,12 +124,12 @@ private:
         #if USE_UNIQUE_PTR
         std::unique_ptr<Concept> copy() const override
         {
-            return std::make_unique<IntModel>(*this);
+            return std::make_unique<Model<T>>(*this);
         }
         #else
         Concept* copy() const override
         {
-            return new IntModel(*this);
+            return new Model<T>(*this);
         }
         #endif
 
@@ -187,39 +140,7 @@ private:
         }
         #endif
 
-        int data;
-    };
-
-    struct StringModel : public Concept
-    {
-        friend std::ostream& operator<<(std::ostream& os, const StringModel& stringModel);
-
-        StringModel(const std::string value)
-            : data(std::move(value))
-        {
-
-        }
-
-        #if USE_UNIQUE_PTR
-        std::unique_ptr<Concept> copy() const override
-        {
-            return std::make_unique<StringModel>(*this);
-        }
-        #else
-        Concept* copy() const override
-        {
-            return new StringModel(*this);
-        }
-        #endif
-
-        #if ENABLE_STREAM_INJECT
-        void stream_inject(std::ostream& os) const override
-        {
-            os << data;
-        }
-        #endif
-
-        std::string data;
+        T data;
     };
 
 };
@@ -241,39 +162,15 @@ std::ostream& operator<<(std::ostream& os, const TypeErasedV1::Concept& concept)
     return os;
 }
 
-
-/*
-std::ostream& operator<<(std::ostream& os, const TypeErasedV1::Concept& concept)
-{
-    if(dynamic_cast<const TypeErasedV1::IntModel*>(&concept))
-    {
-        //os << dynamic_cast<IntModel&>;
-
-    }
-    else if(dynamic_cast<const TypeErasedV1::StringModel*>(&concept))
-    {
-        //os << dynamic_cast<StringModel&>;
-
-    }
-
-    return os;
-}
-*/
-
 // These functions are not technically needed, since the virtual function
 // dispatch to stream_inject makes them redundant, but keep them because
 // they enable the rather nice feature of having an operator<< which
 // works with the derived classes directly, just as it works with the
 // base class.
-std::ostream& operator<<(std::ostream& os, const TypeErasedV1::IntModel& intModel)
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const TypeErasedV1::Model<T>& model)
 {
-    os << intModel.data;
-    return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const TypeErasedV1::StringModel& stringModel)
-{
-    os << stringModel.data;
+    os << model.data;
     return os;
 }
 

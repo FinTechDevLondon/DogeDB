@@ -13,6 +13,9 @@
 
 #include <iostream>
 #include <list>
+#include <vector>
+
+#include <complex>
 
 
 
@@ -24,7 +27,9 @@ int main(int argc, char* argv[])
     TypeErased t1(1);
     TypeErased t2("Hello World");
     TypeErased t3(2);
+    TypeErased t4(std::complex(1, -1));
 
+#if 0
     std::cout << "t1 = t2" << std::endl;
     // should not be able to compile this
     // becase database elements should not be able to change types
@@ -35,15 +40,21 @@ int main(int argc, char* argv[])
 
     // but this should compile!
     t1 = t3;
+#endif 
 
     // what does a database element need to be able to do?
     // get and set
-    std::list<TypeErased> all_objects;
+    std::vector<TypeErased> all_objects;
     all_objects.push_back(t1);
     all_objects.push_back(t2);
+    all_objects.push_back(t3);
+    all_objects.push_back(t4);
+
+    std::vector<TypeErased> all_objects_copy = all_objects;
+    all_objects.push_back(all_objects_copy);
 
     // print everything
-    for(const auto item : all_objects)
+    for(const auto &item : all_objects)
     {
         std::cout << "Printing item: ";
         std::cout << item << std::endl;
